@@ -101,3 +101,16 @@ def multi_hop(n: int = 5) -> SyntheticDataset:
     queries = [p[0] for p in pairs[:n]]
     ds = Dataset(name="multi-hop", version="0.1.0", queries=tuple(queries))
     return SyntheticDataset(dataset=ds, corpus=tuple(_FACTS))
+
+
+# Re-export the adversarial dataset generator from the submodule.
+from .adversarial import adversarial, adversarial_stats  # noqa: E402
+
+__all__ = [
+    "CorpusDoc",
+    "SyntheticDataset",
+    "factual",
+    "multi_hop",
+    "adversarial",
+    "adversarial_stats",
+]

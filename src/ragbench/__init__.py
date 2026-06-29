@@ -18,8 +18,9 @@ from .types import Query, RetrievedDoc, Answer, RunResult, Dataset, Metric, Metr
 from .runner import run_benchmark, BenchmarkConfig, default_metrics, metrics_with_judge
 from .report import scorecard
 from .judge import JudgeBackend, MockJudge, LLMJudge, Verdict, get_judge
+from .diff import diff_runs, render_diff, DiffReport
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __all__ = [
     "Query",
     "RetrievedDoc",
@@ -38,4 +39,7 @@ __all__ = [
     "LLMJudge",
     "Verdict",
     "get_judge",
+    "diff_runs",
+    "render_diff",
+    "DiffReport",
 ]

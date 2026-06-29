@@ -17,11 +17,12 @@ import sys
 from typing import Optional
 
 from . import __version__
-from .datasets import factual, multi_hop
+from .datasets import factual, multi_hop, adversarial, adversarial_stats
 from .types import RetrievedDoc, Answer
 from .runner import run_benchmark, BenchmarkConfig, default_metrics, metrics_with_judge
 from .judge import get_judge
 from .report import scorecard, render_scorecard
+from .diff import diff_runs, render_diff
 
 
 def _utf8_stdout():
@@ -73,7 +74,9 @@ def _get_dataset(name: str):
         return factual()
     if name in ("multi-hop", "multihop", "multi_hop"):
         return multi_hop(n=2)
-    raise SystemExit(f"unknown dataset: {name!r} (use 'factual' or 'multi-hop')")
+    if name == "adversarial":
+        return adversarial()
+    raise SystemExit(f"unknown dataset: {name!r} (use 'factual', 'multi-hop', or 'adversarial')")
 
 
 def cmd_run(args) -> int:
@@ -101,7 +104,11 @@ def cmd_run(args) -> int:
 
 
 def cmd_datasets(args) -> int:
-    for name, fn in [("factual", factual), ("multi-hop", lambda: multi_hop(n=2))]:
+    for name, fn in [
+        ("factual", factual),
+        ("multi-hop", lambda: multi_hop(n=2)),
+        ("adversarial", adversarial),
+    ]:
         syn = fn()
         print(f"{name:<12} {len(syn.dataset)} queries  corpus={len(syn.corpus)} docs  v{syn.dataset.version}")
     return 0
@@ -118,6 +125,35 @@ def cmd_metrics(args) -> int:
     return 0
 
 
+def cmd_compare(args) -> int:
+    """Run two reference pipelines (good vs weak retriever) and diff them."""
+    syn = _get_dataset(args.dataset)
+    good_retriever = _reference_retriever_factory(syn)
+    generator = _reference_generator_factory(syn)
+
+    # Pipeline B: a deliberately weaker retriever (shuffles corpus order).
+    import random as _r
+
+    rng = _r.Random(args.seed)
+    docs_list = list(syn.as_retrieved_docs().values())
+
+    def weak_retriever(query_text: str) -> list[RetrievedDoc]:
+        shuffled = docs_list[:]
+        rng.shuffle(shuffled)
+        return shuffled
+
+    cfg = BenchmarkConfig(metrics=default_metrics())
+    run_a = run_benchmark(syn.dataset, good_retriever, generator, cfg)
+    run_b = run_benchmark(syn.dataset, weak_retriever, generator, cfg)
+
+    report = diff_runs(run_a, run_b, a_label="good-retriever", b_label="weak-retriever")
+    if args.json:
+        print(json.dumps(report.as_dict(), indent=2))
+    else:
+        print(render_diff(report))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="ragbench",
@@ -127,11 +163,17 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_run = sub.add_parser("run", help="Run the reference pipeline on a dataset and print a scorecard")
-    p_run.add_argument("--dataset", default="factual", help="factual | multi-hop (default: factual)")
+    p_run.add_argument("--dataset", default="factual", help="factual | multi-hop | adversarial (default: factual)")
     p_run.add_argument("--judge", default="off", help="off | mock | llm (default: off)")
     p_run.add_argument("--model", default="gpt-4o-mini", help="model for llm judge")
     p_run.add_argument("--json", action="store_true")
     p_run.set_defaults(func=cmd_run)
+
+    p_cmp = sub.add_parser("compare", help="Run good vs weak retriever and diff the scorecards")
+    p_cmp.add_argument("--dataset", default="factual", help="factual | multi-hop | adversarial")
+    p_cmp.add_argument("--seed", type=int, default=42, help="seed for the weak retriever's shuffle")
+    p_cmp.add_argument("--json", action="store_true")
+    p_cmp.set_defaults(func=cmd_compare)
 
     p_ds = sub.add_parser("datasets", help="List available datasets")
     p_ds.set_defaults(func=cmd_datasets)
