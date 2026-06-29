@@ -18,6 +18,8 @@ from .types import (
 )
 from .metrics import PrecisionAtK, RecallAtK, MRR, NDCGAtK
 from .metrics.generation import AnswerOverlap, FaithfulnessLite, CitationCoverage
+from .metrics.judge_metrics import FaithfulnessJudge, AnswerRelevanceJudge
+from .judge import JudgeBackend, MockJudge, get_judge
 
 
 def default_metrics() -> list[Metric]:
@@ -30,6 +32,18 @@ def default_metrics() -> list[Metric]:
         AnswerOverlap(),
         FaithfulnessLite(),
         CitationCoverage(),
+    ]
+
+
+def metrics_with_judge(judge: Optional[JudgeBackend] = None) -> list[Metric]:
+    """Default suite plus two judge metrics (faithfulness + relevance).
+
+    With no judge, uses MockJudge so the suite still runs offline.
+    """
+    judge = judge or MockJudge()
+    return default_metrics() + [
+        FaithfulnessJudge(judge=judge),
+        AnswerRelevanceJudge(judge=judge),
     ]
 
 

@@ -75,10 +75,22 @@ ragbench — factual (10 queries, 0.01s)
 
 **Generation** (no LLM judge): AnswerOverlap (token Jaccard vs expected), Faithfulness-lite (fraction of answer tokens supported by context — a hallucination proxy), CitationCoverage (cited docs that were actually retrieved).
 
+**LLM-as-judge** (optional): FaithfulnessJudge + AnswerRelevanceJudge — a pluggable `JudgeBackend` scores answers. Ships with a deterministic `MockJudge` (no network, real heuristics) and an `LLMJudge` (optional `openai` dep). Swap the backend, keep the metric.
+
+### CLI
+
+```bash
+ragbench datasets                       # list datasets
+ragbench metrics --judge mock           # list the metric suite
+ragbench run --dataset factual          # run reference pipeline, print scorecard
+ragbench run --judge mock --json        # add judge metrics, JSON output
+ragbench run --judge llm --model gpt-4o-mini   # real LLM judge (needs OPENAI_API_KEY)
+```
+
 ## Roadmap
 
-- [ ] LLM-as-judge backend (faithfulness, answer-relevance) — optional `openai` dep
-- [ ] CLI: `ragbench run <pipeline_module> --dataset factual`
+- [x] LLM-as-judge backend (faithfulness, answer-relevance) — optional `openai` dep
+- [x] CLI: `ragbench run --dataset factual`
 - [ ] Run diffing: compare two pipelines head-to-head
 - [ ] More synthetic datasets (adversarial, long-tail)
 
@@ -90,6 +102,7 @@ cd ragbench
 pip install -e ".[dev]"
 pytest -v
 python examples/benchmark.py
+ragbench run --judge mock
 ```
 
 ## License

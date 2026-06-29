@@ -14,17 +14,28 @@ Module map:
   ragbench.report    — aggregates results into a scorecard
 """
 
-from .types import Query, RetrievedDoc, Answer, RunResult, Dataset
-from .runner import run_benchmark
+from .types import Query, RetrievedDoc, Answer, RunResult, Dataset, Metric, MetricResult
+from .runner import run_benchmark, BenchmarkConfig, default_metrics, metrics_with_judge
 from .report import scorecard
+from .judge import JudgeBackend, MockJudge, LLMJudge, Verdict, get_judge
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = [
     "Query",
     "RetrievedDoc",
     "Answer",
     "RunResult",
     "Dataset",
+    "Metric",
+    "MetricResult",
     "run_benchmark",
+    "BenchmarkConfig",
+    "default_metrics",
+    "metrics_with_judge",
     "scorecard",
+    "JudgeBackend",
+    "MockJudge",
+    "LLMJudge",
+    "Verdict",
+    "get_judge",
 ]
