@@ -103,8 +103,9 @@ def multi_hop(n: int = 5) -> SyntheticDataset:
     return SyntheticDataset(dataset=ds, corpus=tuple(_FACTS))
 
 
-# Re-export the adversarial dataset generator from the submodule.
+# Re-export dataset generators from submodules.
 from .adversarial import adversarial, adversarial_stats  # noqa: E402
+from .longtail import longtail, longtail_stats  # noqa: E402
 
 __all__ = [
     "CorpusDoc",
@@ -113,4 +114,6 @@ __all__ = [
     "multi_hop",
     "adversarial",
     "adversarial_stats",
+    "longtail",
+    "longtail_stats",
 ]

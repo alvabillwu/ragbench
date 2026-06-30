@@ -83,16 +83,52 @@ ragbench — factual (10 queries, 0.01s)
 ragbench datasets                       # list datasets
 ragbench metrics --judge mock           # list the metric suite
 ragbench run --dataset factual          # run reference pipeline, print scorecard
+ragbench run --dataset adversarial      # hard-negative distractors (precision stress)
+ragbench run --dataset long-tail        # head + tail queries (recall on rare queries)
+ragbench run --pipeline mypipe.py       # benchmark YOUR retriever+generator
 ragbench run --judge mock --json        # add judge metrics, JSON output
 ragbench run --judge llm --model gpt-4o-mini   # real LLM judge (needs OPENAI_API_KEY)
+ragbench compare --dataset factual      # A/B diff: good vs weak retriever
+```
+
+### Benchmark your own pipeline
+
+Write a `mypipe.py` exposing `retriever` and `generator`, then:
+
+```bash
+ragbench run --pipeline mypipe.py --dataset factual --json
+```
+
+```python
+# mypipe.py
+from ragbench.types import RetrievedDoc, Answer
+
+def retriever(query: str) -> list[RetrievedDoc]:
+    ...  # your retrieval logic
+
+def generator(query: str, docs: list[RetrievedDoc]) -> Answer:
+    ...  # your LLM call
+```
+
+### Run-diffing (A/B)
+
+Compare two pipelines or configs head-to-head:
+
+```python
+from ragbench import run_benchmark, diff_runs, render_diff
+
+run_a = run_benchmark(dataset, retriever_a, generator)
+run_b = run_benchmark(dataset, retriever_b, generator)
+print(render_diff(diff_runs(run_a, run_b, "pipe-a", "pipe-b")))
 ```
 
 ## Roadmap
 
 - [x] LLM-as-judge backend (faithfulness, answer-relevance) — optional `openai` dep
 - [x] CLI: `ragbench run --dataset factual`
-- [ ] Run diffing: compare two pipelines head-to-head
-- [ ] More synthetic datasets (adversarial, long-tail)
+- [x] Run diffing: compare two pipelines head-to-head
+- [x] More synthetic datasets (adversarial, long-tail)
+- [x] Pluggable user pipelines (`--pipeline mypipe.py`)
 
 ## Development
 

@@ -17,12 +17,13 @@ import sys
 from typing import Optional
 
 from . import __version__
-from .datasets import factual, multi_hop, adversarial, adversarial_stats
+from .datasets import factual, multi_hop, adversarial, adversarial_stats, longtail, longtail_stats
 from .types import RetrievedDoc, Answer
 from .runner import run_benchmark, BenchmarkConfig, default_metrics, metrics_with_judge
 from .judge import get_judge
 from .report import scorecard, render_scorecard
 from .diff import diff_runs, render_diff
+from .pipeline_loader import load_pipeline, PipelineLoadError
 
 
 def _utf8_stdout():
@@ -76,13 +77,24 @@ def _get_dataset(name: str):
         return multi_hop(n=2)
     if name == "adversarial":
         return adversarial()
-    raise SystemExit(f"unknown dataset: {name!r} (use 'factual', 'multi-hop', or 'adversarial')")
+    if name in ("long-tail", "longtail", "long_tail"):
+        return longtail()
+    raise SystemExit(f"unknown dataset: {name!r} (use 'factual', 'multi-hop', 'adversarial', or 'long-tail')")
 
 
 def cmd_run(args) -> int:
     syn = _get_dataset(args.dataset)
-    retriever = _reference_retriever_factory(syn)
-    generator = _reference_generator_factory(syn)
+
+    # User pipeline takes precedence over the built-in reference pipeline.
+    if args.pipeline:
+        try:
+            retriever, generator = load_pipeline(args.pipeline)
+        except PipelineLoadError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 2
+    else:
+        retriever = _reference_retriever_factory(syn)
+        generator = _reference_generator_factory(syn)
 
     if args.judge == "llm":
         judge = get_judge("llm", model=args.model)
@@ -108,6 +120,7 @@ def cmd_datasets(args) -> int:
         ("factual", factual),
         ("multi-hop", lambda: multi_hop(n=2)),
         ("adversarial", adversarial),
+        ("long-tail", longtail),
     ]:
         syn = fn()
         print(f"{name:<12} {len(syn.dataset)} queries  corpus={len(syn.corpus)} docs  v{syn.dataset.version}")
@@ -162,8 +175,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"ragbench {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_run = sub.add_parser("run", help="Run the reference pipeline on a dataset and print a scorecard")
-    p_run.add_argument("--dataset", default="factual", help="factual | multi-hop | adversarial (default: factual)")
+    p_run = sub.add_parser("run", help="Run a pipeline on a dataset and print a scorecard")
+    p_run.add_argument("--dataset", default="factual", help="factual | multi-hop | adversarial | long-tail (default: factual)")
+    p_run.add_argument("--pipeline", default=None, help="path to a user pipeline .py exporting retriever() and generator(); overrides the built-in reference pipeline")
     p_run.add_argument("--judge", default="off", help="off | mock | llm (default: off)")
     p_run.add_argument("--model", default="gpt-4o-mini", help="model for llm judge")
     p_run.add_argument("--json", action="store_true")

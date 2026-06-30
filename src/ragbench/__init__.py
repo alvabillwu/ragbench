@@ -19,8 +19,9 @@ from .runner import run_benchmark, BenchmarkConfig, default_metrics, metrics_wit
 from .report import scorecard
 from .judge import JudgeBackend, MockJudge, LLMJudge, Verdict, get_judge
 from .diff import diff_runs, render_diff, DiffReport
+from .pipeline_loader import load_pipeline, PipelineLoadError
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 __all__ = [
     "Query",
     "RetrievedDoc",
@@ -42,4 +43,6 @@ __all__ = [
     "diff_runs",
     "render_diff",
     "DiffReport",
+    "load_pipeline",
+    "PipelineLoadError",
 ]

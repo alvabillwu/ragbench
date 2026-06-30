@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ragbench"
-version = "0.3.0"
-description = "Lightweight RAG pipeline benchmarking framework — synthetic datasets (incl. adversarial), retrieval+generation metrics, optional LLM-as-judge, run-diffing, reproducible runs with no LLM API required for the core."
+version = "1.0.0"
+description = "Lightweight RAG pipeline benchmarking framework — synthetic datasets (factual/multi-hop/adversarial/long-tail), retrieval+generation metrics, optional LLM-as-judge, run-diffing, pluggable user pipelines."
 authors = [{name = "alvabillwu", email = "alvabill@outlook.com"}]
 license = {text = "MIT"}
 readme = "README.md"
